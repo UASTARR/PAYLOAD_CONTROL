@@ -32,13 +32,16 @@ class CDiscQAgent(LFAControlAgent):
         self.conv_error = agent_args.get("conv_error", False)
 
 
-    def _update_weights(self, reward, obs):
+    def _update_weights(self, reward, obs, term_flag):
         past_sa = self._get_representation(self.past_obs, self.past_action)
         prediction = self._get_linear_value_approximation(past_sa)
         
         # compute the target
-        q_next = self._max_action_value(obs)
-        target = reward - self.avg_reward + self.gamma * q_next
+        if not term_flag:
+            q_next = self._max_action_value(obs)
+            target = reward - self.avg_reward + self.gamma * q_next
+        else:
+            target = reward - self.avg_reward
         delta = target - prediction
         
         # update the reward-rate estimate

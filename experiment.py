@@ -13,9 +13,7 @@ from utils.helpers import validate_output_folder
 from env.rolling_payload import RollingPayloadEnv
 from agent.algorithms import CDiscQAgent
 
-env_map = {'Detumbler': 'GameEnv',
-           'SimplerDetumbler': 'SimplerGameEnv',
-           'Dummy': 'DummyEnv'}
+env_map = {'RollingPayload': 'RollingPayloadEnv',}
 agent_map = {'CDiscQ': 'CDiscQAgent'}
 
 
@@ -88,7 +86,7 @@ def run_experiment_one_config(config):
         config['rng_seed'] = run
         agent = getattr(sys.modules[__name__], agent_map[agent_name])(**config)
         env = getattr(sys.modules[__name__], env_map[env_name])(krpc.connect(name="Tracker"))
-        obs, _ = env.reset(seed=config['rng_seed'])
+        obs = env.reset(seed=config['rng_seed'])
         action = agent.start(process_observation(obs))
 
         for t in tqdm(range(max_steps + 1)):
@@ -101,13 +99,15 @@ def run_experiment_one_config(config):
                          exp_name=exp_name, exp_id=config['exp_id'],
                          centered_values=None)
             # the environment and agent step
-            next_obs, reward, _, _ = env.step(action)
-            action = agent.step(reward, process_observation(next_obs))
+            next_obs, reward, term_flag = env.step(action)
+            # print(next_obs, reward, term_flag)
+            action = agent.step(reward, process_observation(next_obs), term_flag)
             # logging the reward at each step
             log['reward'][run][t] = reward
             # logging some data for debugging
             log['action'][run][t] = action
             log['angle'][run][t] = np.arctan2(next_obs[0], next_obs[1])     # this is the *next* angle
+            time.sleep(0.1)
             # print(np.rad2deg(np.arctan2(next_obs[0], next_obs[1])), env.roll())
 
         save_final_weights(nonlinear=False,

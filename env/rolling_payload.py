@@ -38,6 +38,7 @@ class RollingPayloadEnv():
 
     def _set_telemetry(self):
         self.vessel = self.conn.space_center.active_vessel
+        self.non_rotating_reference_frame = self.vessel.orbit.body.non_rotating_reference_frame
 
         # Setting up streams for telemetry
         self.ut = self.conn.add_stream(getattr, self.conn.space_center, "ut")
@@ -51,13 +52,13 @@ class RollingPayloadEnv():
 
     def get_state(self):
         state = [
-            math.sin(math.radians(self.roll())),
-            math.cos(math.radians(self.roll())),
+            self.rate_of_roll,
+            self.vessel.flight().surface_altitude
         ]
         return state
 
-    def compute_reward(self):           # maximum reward at zero roll
-        return -abs(self.roll()) / 180
+    def compute_reward(self):           # maximum reward at zero roll rate
+        return -self.rate_of_roll
 
     def step(self, action):
         """
@@ -83,9 +84,12 @@ class RollingPayloadEnv():
         # for i in range(times_action_repeat):      # could warp time like this
             # self.conn.space_center.warp_to(start_act + (i + 1) * 1 / n)
 
+        angvel = self.vessel.angular_velocity(self.non_rotating_reference_frame)
+        self.rate_of_roll = abs(self.conn.space_center.transform_direction(angvel, self.non_rotating_reference_frame, self.vessel.reference_frame)[1])
+
         state = self.get_state()
         reward = self.compute_reward()
-        self.conn.ui.message("Reward: " + str(round(reward, 2)), duration=0.5)
+        # self.conn.ui.message("Reward: " + str(round(reward, 2)), duration=0.2)
 
         if self.vessel.flight().surface_altitude < 300:
             termination = True
@@ -112,12 +116,14 @@ class RollingPayloadEnv():
             print("Error:", ex)
             exit(f"You have no quick save named '{self.quicksave_name}'. Terminating.")
 
-        time.sleep(0.5)     # TODO: remove/reduce this for actual experiments
+        time.sleep(0.1)     # TODO: remove/reduce this for actual experiments
 
         # game is loaded and we need to reset the telemetry
         self._set_telemetry()
         self._pre_launch_setup()
         self.conn.space_center.physics_warp_factor = 0
+        self.rate_of_roll = 0
+        self.previous_roll = 0
 
         state = self.get_state()
         return state

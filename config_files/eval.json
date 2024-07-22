@@ -1,0 +1,33 @@
+{
+    "exp_name": "linear_deroller_onlyroll_eta0_test",
+    "env_name": "RollingPayload",
+    "agent_name": "CDiscQ",
+    "approximation_type": "linear",
+    "exp_type": "control",
+    "quicksave_name": "1U_4k_drogue_fins",
+    "num_runs": 1,
+    "num_max_steps": 2000,
+    "eval_every_n_steps": 500,
+    "robust_to_initialization": true,
+    "num_actions": 3,
+    "num_features": 2,
+    "epsilon_start": 0,
+    "epsilon_end": 0,
+    "epsilon_decay_param": 2500,
+    "save_weights": 0,
+    "store_max_action_values": false,
+    "weights_file": "results/test/linear_deroller_onlyroll_eta0_test_0.npy",
+    "load_seed": 0,
+    "tilecoder": true,
+    "num_tilings": 4,
+    "tiling_dims": [7],
+    "limits_per_dim": [[-15, 15]],
+    "num_weights": 99,
+    "sweep_parameters":
+    {
+        "alpha": [0.0],
+        "eta": [0.0],
+        "gamma": [0.99],
+        "reward_offset": [0]
+    }
+}

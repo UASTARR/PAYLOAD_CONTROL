@@ -40,6 +40,9 @@ class RollingPayloadEnv():
         self.vessel.control.sas = False
         self.vessel.control.rcs = False
 
+        self.vessel.parts.with_name('Grid Fin S')[0].modules[1].set_field_bool('Deploy', True)
+        self.vessel.parts.with_name('Grid Fin S')[1].modules[1].set_field_bool('Deploy', True)
+
     def get_state(self):
         state = [
             self.rate_of_roll,
@@ -73,7 +76,7 @@ class RollingPayloadEnv():
         reward = self.compute_reward()
         # self.conn.ui.message("Reward: " + str(round(reward, 2)), duration=0.2)
 
-        if self.vessel.flight().surface_altitude < 300:
+        if self.vessel.flight().surface_altitude < 500:
             termination = True
             state = self.reset(seed=0)
 
@@ -81,11 +84,20 @@ class RollingPayloadEnv():
 
     def _choose_action(self, action):
 
-        self.vessel.control.roll = (action - 1.0) * 0.4
+        ### simple high-level action when using RCS
+        # self.vessel.control.roll = (action - 1.0) * 0.4
 
-        # self.conn.ui.message(
-        #     f"Roll = {action - 1}", duration=0.5,
-        # )
+        ### more complex low-level action to control the gridfins
+        if action == -1:
+            deploy_angle = -30
+        elif action == 1:
+            deploy_angle = 30
+        else:
+            deploy_angle = 0
+        
+        ### only setting a pair of gridfins for now
+        for i in range(2):
+            self.vessel.parts.with_name('Grid Fin S')[i].modules[1].set_field_float('Deploy Angle', deploy_angle)
 
     def reset(self, seed):
         """

@@ -111,7 +111,7 @@ def run_experiment_one_config(config):
             # logging some data for debugging
             log['action'][run][t] = action
             # log['angle'][run][t] = np.arctan2(next_obs[0], next_obs[1])     # this is the *next* angle
-            # time.sleep(0.1)
+            time.sleep(0.1)
             # print(np.rad2deg(np.arctan2(next_obs[0], next_obs[1])), env.roll())
 
         save_final_weights(nonlinear=False,

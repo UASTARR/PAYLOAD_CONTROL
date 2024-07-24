@@ -1,11 +1,20 @@
+"""Code to create a pipeline for real-time control.
+
+The input will be the accelerometer readings, which will be processed to determine the rate of roll.
+The rate of roll will be passed to the agent, which will determine the corresponding fin direction.
+The fin direction output will be converted into motor actuations and sent to the motors.
+"""
 
 from collections import deque
 import threading
 import time
+from inference import InferenceAgent
+
 
 # queues for data exchange
 input_queue = deque(maxlen=2)
 output_queue = deque(maxlen=2)
+controller = InferenceAgent(weights_file_name='results/test/linear_deroller_fins_initroll_0.npy')
 
 
 def generate_data():
@@ -25,9 +34,11 @@ def process_data():
         # process the data (ToDo: replace with actual processing)
         print(f'Input: {data}')
         time.sleep(0.05)        # simulates processing time (which might be the longest part of the loop)
+        action = data[0] % 3 - 1
+        # action = controller.choose_action(data)      # the data should be a python list with a single element: a float encoding the rate of roll
 
         # add the output to the output queue
-        output_queue.append(data[0] % 3 - 1)
+        output_queue.append(action)
 
 def use_output():
     last_motor_direction = 0

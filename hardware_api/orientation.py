@@ -3,6 +3,7 @@ import board
 import adafruit_icm20x
 from gpiozero import AngularServo
 from time import sleep 
+import math 
 
 
 counterclockwise = -1
@@ -13,7 +14,8 @@ clockwise = 1
 i2c = board.I2C()
 icm = adafruit_icm20x.ICM20649(board.I2C())
 
- 
+def rad_to_deg(rad):
+    return rad * 180/math.pi
 
 class Payload:
     def __init__(self):
@@ -22,7 +24,7 @@ class Payload:
         self.roll_rate = 0
         self.velocity = (0, 0, 33) # m/s
         self.gridfin_turning = (still, still)
-        self.servo_array = (
+        self.servo_array = ( # Pin 23 and 24 are pair 1 and Pin 27 and 22 are pair 2
                             AngularServo(23, min_angle=-45, max_angle=45), 
                             AngularServo(24, min_angle=-45, max_angle=45), 
                             AngularServo(27, min_angle=-45, max_angle=45), 
@@ -32,39 +34,25 @@ class Payload:
 
     def _update(self, acceleration, gyro):
         self.acceleration = icm.acceleration
-        self.roll_rate = icm.gyro[1]
+        self.roll_rate = icm.gyro[2]
         self.gyro = icm.gyro
         
-        
-    def _turn_gridfins_rel(self, rel_degrees, gridfin_pair):
-        self.gridfin_turning[gridfin_pair] = clockwise if rel_degrees > 0 else counterclockwise
-        
+
 
     def _turn_gridfins_full(self, direction, gridfin_pair):
+        # gridfin pair is either 0 or 1
         # direction == -1 (left), 1 (right)
+        bound = 90 if direction else -90
         self.gridfin_turning[gridfin_pair] = clockwise if direction > 0 else counterclockwise
+        for i in range(gridfin_pair*2, gridfin_pair*2 + 1):
+            self.servo_array[i].angle = bound
 
 
-    def _gridfins_full_stop(self, gridfin_pair):
+    def _gridfins_origin(self, gridfin_pair):
         self.gridfin_turning[gridfin_pair] = still
-        
-        
-
-    def _gridfins_get_rollangle(self):
-        return icm.gyro[2]
-
-    def _update_orientation(self):
-        # madgwick filter here to update the orientation
-        
-    
+        for i in range(gridfin_pair*2, gridfin_pair*2 + 1):
+            self.servo_array[i].angle = 0
         
 
-
-
-
-
-while True:
-    print("Acceleration: X:%.2f, Y: %.2f, Z: %.2f m/s^2" % (icm.acceleration))
-    print("Gyro X:%.2f, Y: %.2f, Z: %.2f rads/s" % (icm.gyro))
-    print("")
-    time.sleep(0.5)
+    def _get_rollangle(self):
+        return rad_to_deg(icm.gyro[2])

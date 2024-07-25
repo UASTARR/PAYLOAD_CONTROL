@@ -1,0 +1,17 @@
+{
+    "exp_name": "naive_controller",
+    "env_name": "RollingPayloadContinuous",
+    "agent_name": "NaiveSmooth",
+    "exp_type": "control",
+    "quicksave_name": "2U_9k_initroll",
+    "num_runs": 1,
+    "num_max_steps": 1000,
+    "eval_every_n_steps": 500,
+    "num_actions": 3,
+    "num_features": 2,
+    "num_weights": 0,
+    "sweep_parameters":
+    {
+        "alpha": [0.0]
+    }
+}

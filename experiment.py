@@ -10,14 +10,20 @@ from tqdm import tqdm
 import krpc
 from utils.sweeper import Sweeper
 from utils.helpers import validate_output_folder
-from env.rolling_payload import RollingPayloadEnv, DummyEnv
-from agent.algorithms import CDiscQAgent
+from env.rolling_payload import RollingPayloadEnv, RollingPayloadEnvContinuous
+from agent.algorithms import CDiscQAgent, NaiveAgent, NaiveSmoothAgent
+
 
 env_map = {
     'RollingPayload': 'RollingPayloadEnv',
+    'RollingPayloadContinuous': 'RollingPayloadEnvContinuous',
     'Dummy': 'DummyEnv'
     }
-agent_map = {'CDiscQ': 'CDiscQAgent'}
+agent_map = {
+    'CDiscQ': 'CDiscQAgent',
+    'Naive': 'NaiveAgent',
+    'NaiveSmooth': 'NaiveSmoothAgent'
+    }
 
 
 def process_observation(raw_obs):
@@ -104,14 +110,14 @@ def run_experiment_one_config(config):
             # the environment and agent step
             next_obs, reward, term_flag = env.step(action)
             action = agent.step(reward, process_observation(next_obs), term_flag)
-            # if t % 50 == 0:
+            # if t % 10 == 0:
             # print(action, reward, term_flag, next_obs)
             # logging the reward at each step
             log['reward'][run][t] = reward
             # logging some data for debugging
             log['action'][run][t] = action
             # log['angle'][run][t] = np.arctan2(next_obs[0], next_obs[1])     # this is the *next* angle
-            time.sleep(0.1)
+            time.sleep(0.5)
             # print(np.rad2deg(np.arctan2(next_obs[0], next_obs[1])), env.roll())
 
         save_final_weights(nonlinear=False,

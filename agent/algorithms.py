@@ -2,6 +2,8 @@
 
 import numpy as np
 from agent.base import LFAControlAgent
+from models.Naive.controller import NaiveController, NaiveSmoothController
+
 
 class CDiscQAgent(LFAControlAgent):
     """
@@ -80,3 +82,25 @@ class CDiscQAgent(LFAControlAgent):
             self.beta = self.beta_init / self.o_b
         else:
             self.beta = self.beta_init / self.update_count if self.skip_exploratory_update else self.beta_init / self.timestep
+
+
+class NaiveAgent():
+    """Sets up the API for the naive controller."""
+    def __init__(self, **agent_args):
+        self.agent = NaiveController()
+        self.weights = np.zeros(1)
+
+    def start(self, obs):
+        return self.agent.choose_action(obs[0])
+
+    def step(self, reward, obs, term_flag):
+        return self.agent.choose_action(obs[0])
+
+
+class NaiveSmoothAgent(NaiveAgent):
+    """
+    Sets up the API for the naive controller that outputs a continuous angle.
+    This agent can only be used with the RollingPayloadEnvContinuous environment.
+    """
+    def __init__(self, **agent_args):
+        self.agent = NaiveSmoothController()

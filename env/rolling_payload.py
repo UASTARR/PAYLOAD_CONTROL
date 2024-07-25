@@ -17,15 +17,6 @@ class RollingPayloadEnv():
         self.conn = conn
         self.quicksave_name = env_args.get("quicksave_name", "1U_2k")
 
-        # self.action_space = spaces.Discrete(9)  # -1, 0, 1 for all axis
-        # self.observation_space = spaces.Box(
-        #     low=-1, high=1, shape=(2,), dtype=np.float32
-        # )
-
-        # self.available_actions = {
-        #     "roll": (self.vessel.control.roll, (-1, 0, 1)),
-        # }
-
     def _set_telemetry(self):
         self.vessel = self.conn.space_center.active_vessel
         self.non_rotating_reference_frame = self.vessel.orbit.body.non_rotating_reference_frame
@@ -54,21 +45,9 @@ class RollingPayloadEnv():
         return -abs(self.rate_of_roll)
 
     def step(self, action):
-        """
-        possible continuous actions: yaw[-1:1], pitch[-1:1], roll[-1:1], throttle[0:1],
-        other: forward[-1:1], up[-1:1], right[-1:1], wheel_throttle[-1:1], wheel_steering[-1:1],
-        available observation
-        https://krpc.github.io/krpc/python/api/space-center/control.html
-        available states:
-        https://krpc.github.io/krpc/python/api/space-center/flight.html
-        https://krpc.github.io/krpc/python/api/space-center/orbit.html
-        https://krpc.github.io/krpc/python/api/space-center/reference-frame.html
-        :param action:
-        :return state, reward, termination:
-        """
         termination = False
 
-        self._choose_action(action)
+        self._apply_action(action)
 
         angvel = self.vessel.angular_velocity(self.non_rotating_reference_frame)
         self.rate_of_roll = self.conn.space_center.transform_direction(angvel, self.non_rotating_reference_frame, self.vessel.reference_frame)[1]
@@ -82,13 +61,18 @@ class RollingPayloadEnv():
 
         return state, reward, termination
 
-    def _choose_action(self, action):
+    def _apply_action(self, action):
+        """
+        0: neutral position
+        1: turn in one direction
+        2: turn in the other direction
+        """
 
         ### simple high-level action when using RCS
         # self.vessel.control.roll = (action - 1.0) * 0.4
 
         ### more complex low-level action to control the gridfins
-        if action == -1:
+        if action == 2:
             deploy_angle = -30
         elif action == 1:
             deploy_angle = 30
@@ -123,32 +107,19 @@ class RollingPayloadEnv():
         return state
 
 
-class DummyEnv:
-    """A dummy non-KSP environment for simply testing the maintenance of zero roll."""
-    def __init__(self, conn, **config) -> None:
-        self.rate_of_roll = 5
-        self.altitude = 1000
+class RollingPayloadEnvContinuous(RollingPayloadEnv):
+    def __init__(self, conn, **env_args):
+        super().__init__(conn, **env_args)
 
-    def get_state(self):
-        return [self.rate_of_roll, self.altitude]
-
-    def reset(self, seed=None):
-        self.rate_of_roll = 5
-        self.altitude = 1000
-        return self.get_state()
-
-    def step(self, action):
-        torque = (action - 1.0) * 0.5
-        self.rate_of_roll += torque
-        self.rate_of_roll = max(-15, min(15, self.rate_of_roll))
-        reward = -abs(self.rate_of_roll)
-        self.altitude -= 10
-
-        if self.altitude <= 100:
-            state = self.reset()
-            return state, reward, True
-
-        return self.get_state(), reward, False
+    def _apply_action(self, action):
+        """
+        action: angle of rotation in degrees
+        """
+        assert action >= -45 and action <= 45, "angle should be between -45 and 45 degrees"
+        
+        ### only setting a pair of gridfins for now
+        for i in range(2):
+            self.vessel.parts.with_name('Grid Fin S')[i].modules[1].set_field_float('Deploy Angle', action)
 
 
 if __name__ == "__main__":

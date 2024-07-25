@@ -231,7 +231,7 @@ class LFAControlAgent:
 
         return action
 
-    def step(self, reward, observation):
+    def step(self, reward, observation, term_flag):
         """
         Returns a new action corresponding to the new observation
         and updates the agent parameters.
@@ -243,7 +243,7 @@ class LFAControlAgent:
             action: an action-index integer
         """
         obs = self._process_raw_observation(observation)
-        self._update_weights(reward, obs)
+        self._update_weights(reward, obs, term_flag)
         action = self._choose_action_egreedy(obs)
 
         self.timestep += 1

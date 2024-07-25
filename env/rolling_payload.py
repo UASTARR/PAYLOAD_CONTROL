@@ -6,26 +6,16 @@ building on Piotr Kubica's work on using kRPC to control KSP using Python.
 import math
 import time
 import random
-# from gymnasium import spaces
 import krpc
-
-
-def get_sign(number):
-    if number > 0:
-        return 1
-    elif number < 0:
-        return -1
-    else:
-        return 0
 
 
 class RollingPayloadEnv():
     """A simple version of the task with only one action to detumble along the roll axis."""
-    def __init__(self, conn, quicksave_name="1U_2k"):
+    def __init__(self, conn, **env_args):
         # self.set_telemetry(conn)
         # self.pre_launch_setup()
         self.conn = conn
-        self.quicksave_name = quicksave_name
+        self.quicksave_name = env_args.get("quicksave_name", "1U_2k")
 
         # self.action_space = spaces.Discrete(9)  # -1, 0, 1 for all axis
         # self.observation_space = spaces.Box(
@@ -38,6 +28,7 @@ class RollingPayloadEnv():
 
     def _set_telemetry(self):
         self.vessel = self.conn.space_center.active_vessel
+        self.non_rotating_reference_frame = self.vessel.orbit.body.non_rotating_reference_frame
 
         # Setting up streams for telemetry
         self.ut = self.conn.add_stream(getattr, self.conn.space_center, "ut")
@@ -49,15 +40,18 @@ class RollingPayloadEnv():
         self.vessel.control.sas = False
         self.vessel.control.rcs = False
 
+        self.vessel.parts.with_name('Grid Fin S')[0].modules[1].set_field_bool('Deploy', True)
+        self.vessel.parts.with_name('Grid Fin S')[1].modules[1].set_field_bool('Deploy', True)
+
     def get_state(self):
         state = [
-            math.sin(math.radians(self.roll())),
-            math.cos(math.radians(self.roll())),
+            self.rate_of_roll,
+            # self.vessel.flight().surface_altitude
         ]
         return state
 
-    def compute_reward(self):           # maximum reward at zero roll
-        return -abs(self.roll()) / 180
+    def compute_reward(self):           # maximum reward at zero roll rate
+        return -abs(self.rate_of_roll)
 
     def step(self, action):
         """
@@ -74,20 +68,15 @@ class RollingPayloadEnv():
         """
         termination = False
 
-        # start_act = self.ut()
-        # n sticky actions in one second
-        # n = 3
-        # while self.ut() - start_act <= 1/n:
-        #     self._choose_action(action)
         self._choose_action(action)
-        # for i in range(times_action_repeat):      # could warp time like this
-            # self.conn.space_center.warp_to(start_act + (i + 1) * 1 / n)
 
+        angvel = self.vessel.angular_velocity(self.non_rotating_reference_frame)
+        self.rate_of_roll = self.conn.space_center.transform_direction(angvel, self.non_rotating_reference_frame, self.vessel.reference_frame)[1]
         state = self.get_state()
         reward = self.compute_reward()
-        self.conn.ui.message("Reward: " + str(round(reward, 2)), duration=0.5)
+        # self.conn.ui.message("Reward: " + str(round(reward, 2)), duration=0.2)
 
-        if self.vessel.flight().surface_altitude < 300:
+        if self.vessel.flight().surface_altitude < 500:
             termination = True
             state = self.reset(seed=0)
 
@@ -95,11 +84,20 @@ class RollingPayloadEnv():
 
     def _choose_action(self, action):
 
-        self.vessel.control.roll = (action - 1.0) * 0.1
+        ### simple high-level action when using RCS
+        # self.vessel.control.roll = (action - 1.0) * 0.4
 
-        # self.conn.ui.message(
-        #     f"Roll = {action - 1}", duration=0.5,
-        # )
+        ### more complex low-level action to control the gridfins
+        if action == -1:
+            deploy_angle = -30
+        elif action == 1:
+            deploy_angle = 30
+        else:
+            deploy_angle = 0
+        
+        ### only setting a pair of gridfins for now
+        for i in range(2):
+            self.vessel.parts.with_name('Grid Fin S')[i].modules[1].set_field_float('Deploy Angle', deploy_angle)
 
     def reset(self, seed):
         """
@@ -112,15 +110,45 @@ class RollingPayloadEnv():
             print("Error:", ex)
             exit(f"You have no quick save named '{self.quicksave_name}'. Terminating.")
 
-        time.sleep(0.5)     # TODO: remove/reduce this for actual experiments
+        # time.sleep(0.1)     # TODO: remove/reduce this for actual experiments
 
         # game is loaded and we need to reset the telemetry
         self._set_telemetry()
         self._pre_launch_setup()
         self.conn.space_center.physics_warp_factor = 0
+        self.rate_of_roll = 0
+        self.previous_roll = 0
 
         state = self.get_state()
         return state
+
+
+class DummyEnv:
+    """A dummy non-KSP environment for simply testing the maintenance of zero roll."""
+    def __init__(self, conn, **config) -> None:
+        self.rate_of_roll = 5
+        self.altitude = 1000
+
+    def get_state(self):
+        return [self.rate_of_roll, self.altitude]
+
+    def reset(self, seed=None):
+        self.rate_of_roll = 5
+        self.altitude = 1000
+        return self.get_state()
+
+    def step(self, action):
+        torque = (action - 1.0) * 0.5
+        self.rate_of_roll += torque
+        self.rate_of_roll = max(-15, min(15, self.rate_of_roll))
+        reward = -abs(self.rate_of_roll)
+        self.altitude -= 10
+
+        if self.altitude <= 100:
+            state = self.reset()
+            return state, reward, True
+
+        return self.get_state(), reward, False
 
 
 if __name__ == "__main__":

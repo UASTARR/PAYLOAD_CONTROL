@@ -9,20 +9,32 @@ from collections import deque
 import threading
 import time
 from inference import InferenceAgent
+from hardware_api.orientation import Payload
+from models.Naive.controller import NaiveSmoothController
 
 
 # queues for data exchange
 input_queue = deque(maxlen=2)
 output_queue = deque(maxlen=2)
-controller = InferenceAgent(weights_file_name='results/test/linear_deroller_fins_initroll_0.npy')
+# controller = InferenceAgent(weights_file_name='results/test/linear_deroller_fins_initroll_0.npy')
+
+payload = Payload()
+controller = NaiveSmoothController()
 
 
 def generate_data():
-    i = 0
+    prev_time = time.time()
+    prev_roll_angle = payload._get_rollangle()
+    
     while True:
-        # generate random data (ToDo: replace with actual data source)
-        data = [i, i+1]
-        i+=1 
+        curr_roll_angle = payload._get_rollangle()
+        curr_time = time.time()
+        roll_rate = (curr_roll_angle - prev_roll_angle) / (curr_time - prev_time)
+        prev_roll_angle = curr_roll_angle
+        prev_time = curr_time
+
+        data = [curr_roll_angle, roll_rate]
+
         # add the data to the queue
         input_queue.append(data)
 
@@ -31,32 +43,33 @@ def process_data():
         # get the *latest* data from the queue
         data = input_queue.pop()
         
-        # process the data (ToDo: replace with actual processing)
-        print(f'Input: {data}')
-        time.sleep(0.05)        # simulates processing time (which might be the longest part of the loop)
-        action = data[0] % 3 - 1
-        # action = controller.choose_action(data)      # the data should be a python list with a single element: a float encoding the rate of roll
+        # process the data 
+        # print(f'Input: {data}')
+        # time.sleep(0.05)        # simulates processing time (which might be the longest part of the loop)
+        action = controller.choose_action([data[1]])      # the data should be a python list with a single element: a float encoding the rate of roll
 
         # add the output to the output queue
         output_queue.append(action)
 
 def use_output():
-    last_motor_direction = 0
+    prev_output = 0
     while True:
         # get the *latest* output from the queue
         try:
-            motor_direction = output_queue.pop()
+            output = output_queue.pop()
         except IndexError:      # in case the output queue is empty, repeat last action
-            motor_direction = last_motor_direction
+            output = prev_output
         finally:
-            last_motor_direction = motor_direction
+            prev_output = output
 
-        # use the output (ToDo: send this output to the motors via the Pi)
-        print(f'Output: {motor_direction}')
+        # use the output
+        payload.set_gridfin_angle(0, output)    # ToDo: setting a single pair for now, change as required
         time.sleep(0.01)        # reducing this might result in a lot of actions repeating
 
 
-# start the threads
-threading.Thread(target=generate_data).start()
-threading.Thread(target=process_data).start()
-threading.Thread(target=use_output).start()
+def main():
+
+    # start the threads
+    threading.Thread(target=generate_data).start()
+    threading.Thread(target=process_data).start()
+    threading.Thread(target=use_output).start()

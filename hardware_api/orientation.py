@@ -31,13 +31,10 @@ class Payload:
                             AngularServo(22, min_angle=-45, max_angle=45)
                             )
         
-
     def _update(self, acceleration, gyro):
         self.acceleration = icm.acceleration
         self.roll_rate = icm.gyro[2]
-        self.gyro = icm.gyro
-        
-
+        self.gyro = icm.gyro     
 
     def _turn_gridfins_full(self, direction, gridfin_pair):
         # gridfin pair is either 0 or 1
@@ -47,12 +44,14 @@ class Payload:
         for i in range(gridfin_pair*2, gridfin_pair*2 + 1):
             self.servo_array[i].angle = bound
 
-
     def _gridfins_origin(self, gridfin_pair):
         self.gridfin_turning[gridfin_pair] = still
         for i in range(gridfin_pair*2, gridfin_pair*2 + 1):
-            self.servo_array[i].angle = 0
-        
+            self.servo_array[i].angle = 0   
 
     def _get_rollangle(self):
         return rad_to_deg(icm.gyro[2])
+
+    def set_gridfin_angle(self, gridfin_pair, angle):
+        for i in range(gridfin_pair*2, gridfin_pair*2 + 1):
+            self.servo_array[i].angle = angle       # ToDo: check if these need to be opposite

@@ -19,6 +19,7 @@ c. comment the lines corresponding to the other controllers
 d. change the controller_name variable to the corresponding controller (and give a name to the initial conditions!)
 """
 
+import math
 import time
 from hardware_api.orientation import Payload
 from models.Naive.controller import NaiveController
@@ -65,14 +66,14 @@ with open(f"{controller_name}_initroll_{name_for_init_roll_conditions}.csv", "w"
         ### compute the action
         output = controller_n.choose_action(data[1])        # expects a single element: a float encoding the rate of roll 
         # output = controller_ns.choose_action(data[1])       # expects a single element: a float encoding the rate of roll
-        # output = controller_pid.transfer(data[0])           # expects a single element: a float encoding the roll angle
-        # output = controller_rl.choose_action([data[1]])     # expects a python list with a single element: a float encoding the rate of roll
+        # output = controller_pid.transfer(data[0]*math.pi/180)           # expects a single element: a float encoding the roll angle
+        # output = controller_rl.choose_action([data[1]*math.pi/180])     # expects a python list with a single element: a float encoding the rate of roll
 
-        ### use the action
-        # payload.set_gridfin_angle(output, 0)    # for ns and pid controllers
-        # payload.set_gridfin_angle(output, 1)    # for ns and pid controllers    # ToDo: have to test if turning both sets in the same direction is correct
-        payload.turn_gridfins(output, 0)        # for n and rl controllers
-        payload.turn_gridfins(output, 1)        # for n and rl controller             # ToDo: have to test if turning both sets in the same direction is correct
+        ### use the action                          # ToDo: check for +output or -output
+        # payload.set_gridfin_angle(output, 0)    # for ns controller
+        # payload.set_gridfin_angle(output, 1)    # for ns controller    # ToDo: have to test if turning both sets in the same direction is correct
+        payload.turn_gridfins(output, 0)        # for n, pid, rl controllers            
+        payload.turn_gridfins(output, 1)        # for n, pid, rl controller             # ToDo: have to test if turning both sets in the same direction is correct
         
         ### log what happened
         file.write(f"{curr_time - start_time},{curr_roll_angle},{roll_rate},{output}\n")       # writing each step may slow down the loop; consider writing in batches

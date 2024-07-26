@@ -10,7 +10,6 @@ counterclockwise = -1
 still = 0
 clockwise = 1
 
-
 i2c = board.I2C()
 icm = adafruit_icm20x.ICM20649(board.I2C())
 
@@ -43,22 +42,15 @@ class Payload:
         # gridfin pair is either 0 or 1
         # direction == -1 (left), 1 (right)
         bound = 90 if direction else -90
-        
-        if gridfin_pair == 0:
-            self.servo_array[0].angle = bound
-            self.servo_array[1].angle = bound
-        else:
-            self.servo_array[2].angle = bound
-            self.servo_array[3].angle = bound
-        
+        self.gridfin_turning[gridfin_pair] = clockwise if direction > 0 else counterclockwise
+        for i in range(gridfin_pair*2, gridfin_pair*2 + 1):
+            self.servo_array[i].angle = bound
+
 
     def _gridfins_origin(self, gridfin_pair):
-        if gridfin_pair == 0:
-            self.servo_array[0].angle = 0
-            self.servo_array[1].angle = 0
-        else:
-            self.servo_array[2].angle = 0
-            self.servo_array[3].angle = 0
+        self.gridfin_turning[gridfin_pair] = still
+        for i in range(gridfin_pair*2, gridfin_pair*2 + 1):
+            self.servo_array[i].angle = 0
         
 
     def _get_rollangle(self):

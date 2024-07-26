@@ -11,6 +11,8 @@ import time
 from inference import InferenceAgent
 from hardware_api.orientation import Payload
 from models.Naive.controller import NaiveSmoothController
+from models.PID.controller import Controller
+from models.PID.drag import Drag
 
 
 # queues for data exchange
@@ -19,7 +21,8 @@ output_queue = deque(maxlen=2)
 # controller = InferenceAgent(weights_file_name='results/test/linear_deroller_fins_initroll_0.npy')
 
 payload = Payload()
-controller = NaiveSmoothController()
+controller_ns = NaiveSmoothController()
+# controller_pid = Controller(Drag(), set_point=0.0)
 
 
 def generate_data():
@@ -46,7 +49,8 @@ def process_data():
         # process the data 
         # print(f'Input: {data}')
         # time.sleep(0.05)        # simulates processing time (which might be the longest part of the loop)
-        action = controller.choose_action([data[1]])      # the data should be a python list with a single element: a float encoding the rate of roll
+        action = controller_ns.choose_action([data[1]])     # expects a python list with a single element: a float encoding the rate of roll
+        # action = controller_pid.transfer(data[0])           # expects a single element: a float encoding the roll angle
 
         # add the output to the output queue
         output_queue.append(action)

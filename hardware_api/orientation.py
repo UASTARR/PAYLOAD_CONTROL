@@ -25,10 +25,10 @@ class Payload:
         self.velocity = (0, 0, 33) # m/s
         self.gridfin_turning = (still, still)
         self.servo_array = ( # Pin 23 and 24 are pair 1 and Pin 27 and 22 are pair 2
-                            AngularServo(23, min_angle=-45, max_angle=45), 
-                            AngularServo(24, min_angle=-45, max_angle=45), 
-                            AngularServo(27, min_angle=-45, max_angle=45), 
-                            AngularServo(22, min_angle=-45, max_angle=45)
+                            AngularServo(23, min_angle=-90, max_angle=90), 
+                            AngularServo(24, min_angle=-90, max_angle=90), 
+                            AngularServo(27, min_angle=-90, max_angle=90), 
+                            AngularServo(22, min_angle=-90, max_angle=90)
                             )
         
 
@@ -43,15 +43,22 @@ class Payload:
         # gridfin pair is either 0 or 1
         # direction == -1 (left), 1 (right)
         bound = 90 if direction else -90
-        self.gridfin_turning[gridfin_pair] = clockwise if direction > 0 else counterclockwise
-        for i in range(gridfin_pair*2, gridfin_pair*2 + 1):
-            self.servo_array[i].angle = bound
-
+        
+        if gridfin_pair == 0:
+            self.servo_array[0].angle = bound
+            self.servo_array[1].angle = bound
+        else:
+            self.servo_array[2].angle = bound
+            self.servo_array[3].angle = bound
+        
 
     def _gridfins_origin(self, gridfin_pair):
-        self.gridfin_turning[gridfin_pair] = still
-        for i in range(gridfin_pair*2, gridfin_pair*2 + 1):
-            self.servo_array[i].angle = 0
+        if gridfin_pair == 0:
+            self.servo_array[0].angle = 0
+            self.servo_array[1].angle = 0
+        else:
+            self.servo_array[2].angle = 0
+            self.servo_array[3].angle = 0
         
 
     def _get_rollangle(self):

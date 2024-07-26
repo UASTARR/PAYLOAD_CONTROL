@@ -2,12 +2,14 @@ import time
 from hardware_api.orientation import Payload
 
 def main():
-    t = 10 # seconds delay
+    t = 1 # seconds delay
     payload = Payload()
-    payload._turn_gridfins_full(1, 0)
-    payload._turn_gridfins_full(1, 1)
+    payload.servo_array[0].angle = -90
+    payload.servo_array[1].angle = -90
+    payload.servo_array[2].angle = -90
+    payload.servo_array[3].angle = -90
     
-    with open("roll_angle_data.txt", "w") as file:
+    with open("roll_angle_data_misc.txt", "w") as file:
         start_time = time.time()
         for i in range(t):
             roll_angle = payload._get_rollangle()
@@ -17,8 +19,10 @@ def main():
             time.sleep(1)
         
         initial_sign = (roll_angle > 0)
-        payload._turn_gridfins_full(0, 0)
-        payload._turn_gridfins_full(0, 1)
+        payload.servo_array[0].angle = 90
+        payload.servo_array[1].angle = 90
+        payload.servo_array[2].angle = 90
+        payload.servo_array[3].angle = 90        
         
         while True:
             roll_angle = payload._get_rollangle()
@@ -28,6 +32,11 @@ def main():
             if (roll_angle > 0) != initial_sign:
                 break
             time.sleep(1)
+
+        payload.servo_array[0].angle = 0
+        payload.servo_array[1].angle = 0
+        payload.servo_array[2].angle = 0
+        payload.servo_array[3].angle = 0
     
     
 

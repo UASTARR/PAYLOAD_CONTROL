@@ -63,10 +63,10 @@ with open(f"{controller_name}_initroll_{name_for_init_roll_conditions}.csv", "w"
         data = [curr_roll_angle, roll_rate]
 
         ### compute the action
-        action = controller_n.choose_action(data[1])        # expects a single element: a float encoding the rate of roll 
-        # action = controller_ns.choose_action(data[1])       # expects a single element: a float encoding the rate of roll
-        # action = controller_pid.transfer(data[0])           # expects a single element: a float encoding the roll angle
-        # action = controller_rl.choose_action([data[1]])     # expects a python list with a single element: a float encoding the rate of roll
+        output = controller_n.choose_action(data[1])        # expects a single element: a float encoding the rate of roll 
+        # output = controller_ns.choose_action(data[1])       # expects a single element: a float encoding the rate of roll
+        # output = controller_pid.transfer(data[0])           # expects a single element: a float encoding the roll angle
+        # output = controller_rl.choose_action([data[1]])     # expects a python list with a single element: a float encoding the rate of roll
 
         ### use the action
         # payload.set_gridfin_angle(output, 0)    # for ns and pid controllers

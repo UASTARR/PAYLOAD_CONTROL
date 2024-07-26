@@ -1,8 +1,7 @@
 
-from drag import Drag
 
 class Controller:
-    def __init__(self, physics: Drag, set_point=0.0):
+    def __init__(self, physics, set_point=0.0):
         self.physics = physics
         self.K_p = 1.0
         self.set_point = set_point

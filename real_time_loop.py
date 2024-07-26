@@ -40,6 +40,7 @@ def generate_data():
 
         # add the data to the queue
         input_queue.append(data)
+        time.sleep(2)
 
 def process_data():
     while True:
@@ -49,11 +50,12 @@ def process_data():
         # process the data 
         # print(f'Input: {data}')
         # time.sleep(0.05)        # simulates processing time (which might be the longest part of the loop)
-        action = controller_ns.choose_action([data[1]])     # expects a python list with a single element: a float encoding the rate of roll
+        action = controller_ns.choose_action(data[1])     # expects a python list with a single element: a float encoding the rate of roll
         # action = controller_pid.transfer(data[0])           # expects a single element: a float encoding the roll angle
-
+        print(data[1],action)
         # add the output to the output queue
         output_queue.append(action)
+        time.sleep(2)
 
 def use_output():
     prev_output = 0
@@ -68,12 +70,14 @@ def use_output():
 
         # use the output
         payload.set_gridfin_angle(0, output)    # ToDo: setting a single pair for now, change as required
-        time.sleep(0.01)        # reducing this might result in a lot of actions repeating
+        time.sleep(2)        # reducing this might result in a lot of actions repeating
 
 
-def main():
+
 
     # start the threads
-    threading.Thread(target=generate_data).start()
-    threading.Thread(target=process_data).start()
-    threading.Thread(target=use_output).start()
+threading.Thread(target=generate_data).start()
+time.sleep(0.5)
+threading.Thread(target=process_data).start()
+time.sleep(1)
+threading.Thread(target=use_output).start()

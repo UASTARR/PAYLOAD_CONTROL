@@ -52,5 +52,12 @@ class Payload:
         return rad_to_deg(icm.gyro[2])
 
     def set_gridfin_angle(self, gridfin_pair, angle):
-        for i in range(gridfin_pair*2, gridfin_pair*2 + 1):
-            self.servo_array[i].angle = angle       # ToDo: check if these need to be opposite
+        # for i in range(gridfin_pair*2, gridfin_pair*2 + 1):
+        #     self.servo_array[i].angle = angle       # ToDo: check if these need to be opposite
+
+        if gridfin_pair == 0:
+            self.servo_array[0].angle = angle
+            self.servo_array[1].angle = angle
+        elif gridfin_pair == 1:
+            self.servo_array[2].angle = angle
+            self.servo_array[3].angle = angle

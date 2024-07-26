@@ -1,5 +1,5 @@
 
-class Drag:
+class Drag():
     def __init__(self, T_celsius=25.0, p_atm=101.325):
         # velocity u is constant at 120kph
         self.u = 120.0*1000.0/3600.0

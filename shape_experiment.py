@@ -12,7 +12,7 @@ def main():
     with open("roll_angle_data_misc.txt", "w") as file:
         start_time = time.time()
         for i in range(t):
-            roll_angle = payload._get_rollangle()
+            roll_angle = payload.get_rollangle()
             elapsed_time = time.time() - start_time
             file.write(f"{elapsed_time:.2f}, {roll_angle:.2f}\n")
             print(roll_angle)
@@ -25,7 +25,7 @@ def main():
         payload.servo_array[3].angle = 90        
         
         while True:
-            roll_angle = payload._get_rollangle()
+            roll_angle = payload.get_rollangle()
             elapsed_time = time.time() - start_time
             file.write(f"{elapsed_time:.2f}, {roll_angle:.2f}\n")
             print(roll_angle)

@@ -1,8 +1,21 @@
-"""Code to create a pipeline for real-time control.
+"""
+Code to create a pipeline for real-time control.
 
-The input will be the accelerometer readings, which will be processed to determine the rate of roll.
-The rate of roll will be passed to the agent, which will determine the corresponding fin direction.
-The fin direction output will be converted into motor actuations and sent to the motors.
+The input will be the accelerometer readings, which will be processed to determine the angle of roll and the rate of roll.
+The roll data will be passed to the controllers, which will determine the corresponding fin angle/direction.
+The fin angle/direction output will be converted into motor actuations and sent to the motors.
+
+
+There are four controllers:
+1. controller_n: NaiveController
+2. controller_ns: NaiveSmoothController
+3. controller_pid: PID Controller
+4. controller_rl: Learned Controller
+
+To run each controller, 
+a. uncomment the line that initializes the controller (before the three functions)
+b. uncomment the line that calls the controller (in the process_data function)
+c. comment the lines corresponding to the other controllers
 """
 
 from collections import deque
@@ -15,22 +28,23 @@ from models.PID.controller import Controller
 from models.PID.drag import Drag
 
 
-# queues for data exchange
+### queues for data exchange
 input_queue = deque(maxlen=2)
 output_queue = deque(maxlen=2)
-# controller = InferenceAgent(weights_file_name='results/test/linear_deroller_fins_initroll_0.npy')
 
 payload = Payload()
-controller_ns = NaiveSmoothController()
+controller_n = NaiveController()
+# controller_ns = NaiveSmoothController()
 # controller_pid = Controller(Drag(), set_point=0.0)
+# controller_rl = InferenceAgent(weights_file_name='results/test/linear_deroller_fins_initroll_0.npy')   # might have to change this to a different file
 
 
 def generate_data():
     prev_time = time.time()
-    prev_roll_angle = payload._get_rollangle()
+    prev_roll_angle = payload.get_rollangle()
     
     while True:
-        curr_roll_angle = payload._get_rollangle()
+        curr_roll_angle = payload.get_rollangle()
         curr_time = time.time()
         roll_rate = (curr_roll_angle - prev_roll_angle) / (curr_time - prev_time)
         prev_roll_angle = curr_roll_angle
@@ -38,29 +52,34 @@ def generate_data():
 
         data = [curr_roll_angle, roll_rate]
 
-        # add the data to the queue
+        ### add the data to the queue
         input_queue.append(data)
         time.sleep(2)
 
 def process_data():
     while True:
-        # get the *latest* data from the queue
-        data = input_queue.pop()
+        ### get the *latest* data from the queue
+        try:
+            data = input_queue.pop()
+        except IndexError:      # in case the queue is empty, wait for a bit
+            print('Input queue is empty, sleeping for 0.5s...')
+            time.sleep(0.5)
+            continue
         
-        # process the data 
-        # print(f'Input: {data}')
-        # time.sleep(0.05)        # simulates processing time (which might be the longest part of the loop)
-        action = controller_ns.choose_action(data[1])     # expects a python list with a single element: a float encoding the rate of roll
+        ### process the data
+        action = controller_n.choose_action(data[1])        # expects a single element: a float encoding the rate of roll 
+        # action = controller_ns.choose_action(data[1])       # expects a single element: a float encoding the rate of roll
         # action = controller_pid.transfer(data[0])           # expects a single element: a float encoding the roll angle
-        print(data[1],action)
-        # add the output to the output queue
+        # action = controller_rl.choose_action([data[1]])     # expects a python list with a single element: a float encoding the rate of roll
+
+        ### add the output to the output queue
         output_queue.append(action)
         time.sleep(2)
 
 def use_output():
     prev_output = 0
     while True:
-        # get the *latest* output from the queue
+        ### get the *latest* output from the queue
         try:
             output = output_queue.pop()
         except IndexError:      # in case the output queue is empty, repeat last action
@@ -68,14 +87,16 @@ def use_output():
         finally:
             prev_output = output
 
-        # use the output
-        payload.set_gridfin_angle(0, output)    # ToDo: setting a single pair for now, change as required
-        time.sleep(2)        # reducing this might result in a lot of actions repeating
+        ### use the output
+        # payload.set_gridfin_angle(output, 0)    # for ns and pid controllers
+        # payload.set_gridfin_angle(output, 1)    # for ns and pid controllers    # ToDo: have to test if turning both sets in the same direction is correct
+        payload.turn_gridfins(output, 0)        # for n and rl controllers
+        payload.turn_gridfins(output, 1)        # for n and rl controller             # ToDo: have to test if turning both sets in the same direction is correct
+        
+        time.sleep(0.01)        # reducing this might result in a lot of actions repeating
 
 
-
-
-    # start the threads
+### start the threads
 threading.Thread(target=generate_data).start()
 time.sleep(0.5)
 threading.Thread(target=process_data).start()

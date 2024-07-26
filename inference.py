@@ -40,7 +40,7 @@ class InferenceAgent():
         observation = np.concatenate((self.tilecoder.getitem(obs), [self.num_features - 1]))
         q_s = np.array([self._get_value(observation, a) for a in range(self.num_actions)])
         action_index = np.argmax(q_s)      # can replace this with a cleverer version that matches the previous action in case of a tie
-        return self.actions[action_index]
+        return action_index
 
 
 if __name__ == '__main__':

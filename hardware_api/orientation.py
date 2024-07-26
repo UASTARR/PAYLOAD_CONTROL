@@ -32,32 +32,29 @@ class Payload:
         
     def _update(self, acceleration, gyro):
         self.acceleration = icm.acceleration
-        self.roll_rate = icm.gyro[2]
+        self.roll_rate = icm.gyro[2]                            # AN: this is the roll angle, right, not the roll rate?
         self.gyro = icm.gyro     
 
-    def _turn_gridfins_full(self, direction, gridfin_pair):
-        # gridfin pair is either 0 or 1
-        # direction == -1 (left), 1 (right)
-        bound = 90 if direction else -90
-        self.gridfin_turning[gridfin_pair] = clockwise if direction > 0 else counterclockwise
-        for i in range(gridfin_pair*2, gridfin_pair*2 + 1):
-            self.servo_array[i].angle = bound
+    def turn_gridfins(self, direction, gridfin_pair):
+        # gridfin pair: 0 or 1
+        # direction: 0 (neutral), 1 (right), 2 (left)
+        max_angle = 30
+        if direction == 2:
+            self.set_gridfin_angle(-max_angle, gridfin_pair)
+        elif direction == 1:
+            self.set_gridfin_angle(max_angle, gridfin_pair)
+        else:
+            self.set_gridfin_angle(0, gridfin_pair)
+        
 
     def _gridfins_origin(self, gridfin_pair):
         self.gridfin_turning[gridfin_pair] = still
-        for i in range(gridfin_pair*2, gridfin_pair*2 + 1):
+        for i in range(gridfin_pair*2, gridfin_pair*2 + 2):
             self.servo_array[i].angle = 0   
 
-    def _get_rollangle(self):
+    def get_rollangle(self):
         return rad_to_deg(icm.gyro[2])
 
-    def set_gridfin_angle(self, gridfin_pair, angle):
-        # for i in range(gridfin_pair*2, gridfin_pair*2 + 1):
-        #     self.servo_array[i].angle = angle       # ToDo: check if these need to be opposite
-
-        if gridfin_pair == 0:
-            self.servo_array[0].angle = angle
-            self.servo_array[1].angle = angle
-        elif gridfin_pair == 1:
-            self.servo_array[2].angle = angle
-            self.servo_array[3].angle = angle
+    def set_gridfin_angle(self, angle, gridfin_pair):
+        for i in range(gridfin_pair*2, gridfin_pair*2 + 2):
+            self.servo_array[i].angle = angle       # ToDo: check if these need to be opposite

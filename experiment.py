@@ -11,7 +11,7 @@ import krpc
 from utils.sweeper import Sweeper
 from utils.helpers import validate_output_folder
 from env.rolling_payload import RollingPayloadEnv, RollingPayloadEnvContinuous
-from agent.algorithms import CDiscQAgent, NaiveAgent, NaiveSmoothAgent
+from agent.algorithms import CDiscQAgent, BangBangAgent, LinearAgent, QuadraticAgent
 
 
 env_map = {
@@ -21,8 +21,9 @@ env_map = {
     }
 agent_map = {
     'CDiscQ': 'CDiscQAgent',
-    'Naive': 'NaiveAgent',
-    'NaiveSmooth': 'NaiveSmoothAgent'
+    'BangBang': 'BangBangAgent',
+    'Linear': 'LinearAgent',
+    'Quadratic': 'QuadraticAgent',
     }
 
 
@@ -43,7 +44,8 @@ def save_final_weights(nonlinear, run_idx, log, agent, exp_name, exp_id):
     if nonlinear:
         agent.save_trained_model(f'{exp_name}_{exp_id}_{run_idx}')
     else:
-        log['weights_final'][run_idx] = agent.weights
+        if hasattr(agent, "weights"):
+            log['weights_final'][run_idx] = agent.weights
     if hasattr(agent, "avg_reward"):
         log['avgrew_final'][run_idx] = agent.avg_reward
 
@@ -76,7 +78,7 @@ def run_experiment_one_config(config):
     store_max_action_values = config.get('store_max_action_values', False)
 
     log = {'reward': np.zeros((num_runs, max_steps + 1), dtype=np.float32),
-           'angle': np.zeros((num_runs, max_steps + 1), dtype=np.float32),
+           'roll_rate': np.zeros((num_runs, max_steps + 1), dtype=np.float32),
            'action': np.zeros((num_runs, max_steps + 1), dtype=np.float32),
            'weights_final': np.zeros((num_runs, num_weights), dtype=np.float32),
            'avgrew_final': np.zeros(num_runs, dtype=np.float32),
@@ -116,8 +118,9 @@ def run_experiment_one_config(config):
             log['reward'][run][t] = reward
             # logging some data for debugging
             log['action'][run][t] = action
+            log['roll_rate'][run][t] = next_obs[0]
             # log['angle'][run][t] = np.arctan2(next_obs[0], next_obs[1])     # this is the *next* angle
-            time.sleep(0.5)
+            time.sleep(0.1)
             # print(np.rad2deg(np.arctan2(next_obs[0], next_obs[1])), env.roll())
 
         save_final_weights(nonlinear=False,

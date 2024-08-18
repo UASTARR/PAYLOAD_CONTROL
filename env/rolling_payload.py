@@ -16,6 +16,9 @@ class RollingPayloadEnv():
         # self.pre_launch_setup()
         self.conn = conn
         self.quicksave_name = env_args.get("quicksave_name", "1U_2k")
+        self.gridfin_name = env_args.get("gridfin_name", "Grid Fin M")
+        self.set_initial_condition = env_args.get("set_initial_condition", False)
+        self.opposite = env_args.get("opposite", False)
 
     def _set_telemetry(self):
         self.vessel = self.conn.space_center.active_vessel
@@ -31,8 +34,17 @@ class RollingPayloadEnv():
         self.vessel.control.sas = False
         self.vessel.control.rcs = False
 
-        self.vessel.parts.with_name('Grid Fin S')[0].modules[1].set_field_bool('Deploy', True)
-        self.vessel.parts.with_name('Grid Fin S')[1].modules[1].set_field_bool('Deploy', True)
+        self.vessel.parts.with_name(self.gridfin_name)[0].modules[1].set_field_bool('Deploy', True)
+        self.vessel.parts.with_name(self.gridfin_name)[1].modules[1].set_field_bool('Deploy', True)
+
+        if self.set_initial_condition:
+            time.sleep(0.5)
+            print("Setting initial condition...")
+            for _ in range(2):
+                # self.vessel.control.roll = 1 if not self.opposite else -1
+                self.vessel.control.roll = -0.5
+                time.sleep(0.2)
+            time.sleep(0.5)
 
     def get_state(self):
         state = [
@@ -81,7 +93,8 @@ class RollingPayloadEnv():
         
         ### only setting a pair of gridfins for now
         for i in range(2):
-            self.vessel.parts.with_name('Grid Fin S')[i].modules[1].set_field_float('Deploy Angle', deploy_angle)
+            # self.vessel.parts.with_name('Grid Fin S')[i].modules[1].set_field_float('Deploy Angle', deploy_angle)
+            self.vessel.parts.with_name(self.gridfin_name)[i].modules[1].set_field_float('Deploy Angle', deploy_angle)
 
     def reset(self, seed):
         """
@@ -115,11 +128,11 @@ class RollingPayloadEnvContinuous(RollingPayloadEnv):
         """
         action: angle of rotation in degrees
         """
-        assert action >= -45 and action <= 45, "angle should be between -45 and 45 degrees"
-        
+        assert action >= -45 and action <= 45, f"angle {action} is not between -45 and 45 degrees"
+
         ### only setting a pair of gridfins for now
         for i in range(2):
-            self.vessel.parts.with_name('Grid Fin S')[i].modules[1].set_field_float('Deploy Angle', action)
+            self.vessel.parts.with_name(self.gridfin_name)[i].modules[1].set_field_float('Deploy Angle', action)
 
 
 if __name__ == "__main__":

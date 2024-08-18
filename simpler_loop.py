@@ -22,15 +22,15 @@ d. change the controller_name variable to the corresponding controller (and give
 import math
 import time
 from hardware_api.orientation import Payload
-from models.Naive.controller import NaiveController
-from models.Naive.controller import NaiveSmoothController
+from models.Naive.controller import BangBangController
+from models.Naive.controller import LinearController
 from models.PID.controller import Controller
 from models.PID.drag import Drag
 from inference import InferenceAgent        # ToDo: move this to models/ later.
 
 
 payload = Payload()
-controller_n = NaiveController()
+controller_n = BangBangController()
 # controller_ns = NaiveSmoothController()
 # controller_pid = Controller(Drag(), set_point=0.0)
 # controller_rl = InferenceAgent(weights_file_name='results/test/linear_deroller_fins_initroll_0.npy')   # might have to change this to a different file
@@ -66,7 +66,7 @@ with open(f"{controller_name}_initroll_{name_for_init_roll_conditions}.csv", "w"
         ### compute the action
         output = controller_n.choose_action(data[1])        # expects a single element: a float encoding the rate of roll 
         # output = controller_ns.choose_action(data[1])       # expects a single element: a float encoding the rate of roll
-        # output = controller_pid.transfer(data[0]*math.pi/180)           # expects a single element: a float encoding the roll angle
+        # output = controller_pid.transfer(data[1]*math.pi/180)           # expects a single element: a float encoding the roll angle
         # output = controller_rl.choose_action([data[1]*math.pi/180])     # expects a python list with a single element: a float encoding the rate of roll
 
         ### use the action                          # ToDo: check for +output or -output

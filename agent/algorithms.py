@@ -2,7 +2,7 @@
 
 import numpy as np
 from agent.base import LFAControlAgent
-from models.Naive.controller import NaiveController, NaiveSmoothController
+from models.Naive.controller import BangBangController, LinearController, QuadraticController
 
 
 class CDiscQAgent(LFAControlAgent):
@@ -84,10 +84,10 @@ class CDiscQAgent(LFAControlAgent):
             self.beta = self.beta_init / self.update_count if self.skip_exploratory_update else self.beta_init / self.timestep
 
 
-class NaiveAgent():
+class BangBangAgent():
     """Sets up the API for the naive controller."""
     def __init__(self, **agent_args):
-        self.agent = NaiveController()
+        self.agent = BangBangController()
         self.weights = np.zeros(1)
 
     def start(self, obs):
@@ -97,10 +97,19 @@ class NaiveAgent():
         return self.agent.choose_action(obs[0])
 
 
-class NaiveSmoothAgent(NaiveAgent):
+class LinearAgent(BangBangAgent):
     """
     Sets up the API for the naive controller that outputs a continuous angle.
     This agent can only be used with the RollingPayloadEnvContinuous environment.
     """
     def __init__(self, **agent_args):
-        self.agent = NaiveSmoothController()
+        self.agent = LinearController(**agent_args)
+
+
+class QuadraticAgent(BangBangAgent):
+    """
+    Sets up the API for the naive controller that outputs a smoothed continuous angle.
+    This agent can only be used with the RollingPayloadEnvContinuous environment.
+    """
+    def __init__(self, **agent_args):
+        self.agent = QuadraticController(**agent_args)

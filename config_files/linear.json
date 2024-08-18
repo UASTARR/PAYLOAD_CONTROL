@@ -1,0 +1,21 @@
+{
+    "exp_name": "linear_max45_roll2",
+    "env_name": "RollingPayloadContinuous",
+    "agent_name": "Linear",
+    "exp_type": "control",
+    "quicksave_name": "RSS_2fins",
+    "set_initial_condition": true,
+    "opposite": true,
+    "max_gridfin_angle_magnitude": 45,
+    "max_rate_of_roll": 2,
+    "num_runs": 1,
+    "num_max_steps": 150,
+    "eval_every_n_steps": 500,
+    "num_actions": 3,
+    "num_features": 2,
+    "num_weights": 0,
+    "sweep_parameters":
+    {
+        "alpha": [0.0]
+    }
+}

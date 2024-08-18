@@ -53,7 +53,8 @@ class Payload:
             self.servo_array[i].angle = 0   
 
     def get_rollangle(self):
-        return rad_to_deg(icm.gyro[2])
+        # return rad_to_deg(icm.gyro[2])
+        return icm.gyro[2]      # return the roll angle in radians
 
     def set_gridfin_angle(self, angle, gridfin_pair):
         for i in range(gridfin_pair*2, gridfin_pair*2 + 2):

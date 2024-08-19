@@ -13,7 +13,7 @@ class DummyPayload:
     def get_rollangle(self):
         if self.delays:
             if np.random.random() < 0.1:
-                return
+                return                                   # to test if the execute_controller.py can handle missing data
         self.roll_angle += (np.random.random()) * 0.1
         return self.roll_angle
 

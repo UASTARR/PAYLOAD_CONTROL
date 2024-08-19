@@ -12,7 +12,8 @@ class DummyPayload:
 
     def get_rollangle(self):
         if self.delays:
-            time.sleep(np.random.random()*10)
+            if np.random.random() < 0.1:
+                return
         self.roll_angle += (np.random.random()) * 0.1
         return self.roll_angle
 
